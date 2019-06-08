@@ -1,12 +1,15 @@
 # graphql-example-go
-Example of GraphQL implementation in Golang
+Example of GraphQL implementation in 
+
+# Playground (Work in Progress)
+* run the server
+* navigate to http://localhost:8080/graphiql
 
 # TODOS
 * Configuration File
-* Playground Hosting
 * Test Cases
 * Subscriptions
-* DB
+* DB (containerized maybe?)
 * Code Coverage
 * Documentation Generation
 * Performance Testing
@@ -14,3 +17,4 @@ Example of GraphQL implementation in Golang
 * Packaging
 * Workers
 * Graceful Shutdown
+* heroku app hosting

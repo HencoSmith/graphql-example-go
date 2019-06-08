@@ -1,2 +1,6 @@
+github.com/friendsofgo/graphiql v0.2.2 h1:ccnuxpjgIkB+Lr9YB2ZouiZm7wvciSfqwpa9ugWzmn0=
+github.com/friendsofgo/graphiql v0.2.2/go.mod h1:8Y2kZ36AoTGWs78+VRpvATyt3LJBx0SZXmay80ZTRWo=
 github.com/graphql-go/graphql v0.7.8 h1:769CR/2JNAhLG9+aa8pfLkKdR0H+r5lsQqling5WwpU=
 github.com/graphql-go/graphql v0.7.8/go.mod h1:k6yrAYQaSP59DC5UVxbgxESlmVyojThKdORUqGDGmrI=
+github.com/mnmtanish/go-graphiql v0.0.0-20160921055525-cef5a61bd62b h1:lNtRCAd8H6kbpFCeyeaj9iKjWO6Mw1FsuCm8a83f3I4=
+github.com/mnmtanish/go-graphiql v0.0.0-20160921055525-cef5a61bd62b/go.mod h1:GvbRjr1rHfffN7u0UiYN8EgNDstHifc1sLIqs1ZPYes=
