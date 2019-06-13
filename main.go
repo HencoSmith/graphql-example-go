@@ -63,6 +63,9 @@ func main() {
 	// GraphQL Playground
 	http.HandleFunc("/graphiql", graphiql.ServeGraphiQL)
 
+	// Prisma GraphQL playground
+	http.Handle("/playground/", http.StripPrefix("/playground/", http.FileServer(http.Dir("views"))))
+
 	// Server startup
 	fmt.Println("Server is running on port 8080")
 	http.ListenAndServe(":8080", nil)
