@@ -4,8 +4,8 @@ Example of GraphQL implementation in Golang
 # Playground
 * run the server
 * navigate to:
-..* Prisma (Preferred) [http://localhost:8080/playground]
-..* GraphiQL [http://localhost:8080/graphql]
+  * Prisma (Preferred) [http://localhost:8080/playground]
+  * GraphiQL [http://localhost:8080/graphql]
 
 # Documentation
 Refer to playground generated docs for API documentation.
@@ -17,7 +17,7 @@ godoc -http=:6060
 # Configuration
 Found in ./config/config.yml
 * server - Server related configuration
-..* port - HTTP port to host the server on
+  * port - HTTP port to host the server on
 
 # TODOS
 * Test Cases
