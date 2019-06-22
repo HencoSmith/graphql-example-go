@@ -1,32 +1,21 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 
 	"github.com/graphql-go/graphql"
-	"github.com/mnmtanish/go-graphiql"
+	"github.com/graphql-go/handler"
 
 	"github.com/HencoSmith/graphql-example-go/graphql/products"
 	"github.com/HencoSmith/graphql-example-go/models"
+	source "github.com/HencoSmith/graphql-example-go/source"
 )
 
 // Refer to: https://github.com/graphql-go/graphql/tree/master/examples/crud
 // Reworking into a project template
 
 var productArr []models.Product
-
-func executeQuery(query string, schema graphql.Schema) *graphql.Result {
-	result := graphql.Do(graphql.Params{
-		Schema:        schema,
-		RequestString: query,
-	})
-	if len(result.Errors) > 0 {
-		fmt.Printf("\nerrors: %v", result.Errors)
-	}
-	return result
-}
 
 func initProductsData(p *[]models.Product) {
 	product1 := models.Product{ID: 1, Name: "Chicha Morada", Info: "Chicha morada is a beverage originated in the Andean regions of Perú but is actually consumed at a national level (wiki)", Price: 7.99}
@@ -44,6 +33,7 @@ func main() {
 	// Bind Product Mutations
 	var mutationType = products.Mutations(&productArr)
 
+	// Generate the schema
 	var schema, _ = graphql.NewSchema(
 		graphql.SchemaConfig{
 			Query:    queryType,
@@ -51,22 +41,22 @@ func main() {
 		},
 	)
 
-	// GraphQL endpoint
-	http.HandleFunc("/graphql", func(w http.ResponseWriter, r *http.Request) {
-		// Graphiql Does not post any variables only an query string e.g.
-		// r.URL.Query().Get("query") = "" when graphiql runs
-		fmt.Printf("%v %v %v", r.Method, r.URL, r.Proto)
-		result := executeQuery(r.URL.Query().Get("query"), schema)
-		json.NewEncoder(w).Encode(result)
+	// Handle Playground Hosting
+	h := handler.New(&handler.Config{
+		Schema:   &schema,
+		Pretty:   true,
+		GraphiQL: true,
 	})
 
-	// GraphQL Playground
-	http.HandleFunc("/graphiql", graphiql.ServeGraphiQL)
+	// GraphQL endpoint
+	http.Handle("/graphql", h)
 
 	// Prisma GraphQL playground
 	http.Handle("/playground/", http.StripPrefix("/playground/", http.FileServer(http.Dir("views"))))
 
+	config := source.GetConfig()
+
 	// Server startup
-	fmt.Println("Server is running on port 8080")
-	http.ListenAndServe(":8080", nil)
+	fmt.Println("Server is running on port " + config.Server.Port)
+	http.ListenAndServe(":"+config.Server.Port, nil)
 }
