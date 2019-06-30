@@ -19,6 +19,12 @@ Found in ./config/config.yml
 * server - Server related configuration
   * port - HTTP port to host the server on
 
+# Testing
+Test cases found in ./test
+```
+go test
+```
+
 # TODOS
 * Test Cases
 * Subscriptions
