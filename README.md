@@ -21,8 +21,10 @@ Found in ./config/config.yml
 
 # Testing
 Test cases found in ./test
+Startup the server then run:
 ```
 go test
+go test -run TestMyFunc
 ```
 
 # TODOS

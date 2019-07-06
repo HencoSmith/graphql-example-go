@@ -10,10 +10,10 @@ import (
 
 // GetConfig builds and returns a Configuration struct
 // Loads from a .yml file
-func GetConfig() config.Configuration {
+func GetConfig(prefix string) config.Configuration {
 	// Setup config naming & pathing
 	viper.SetConfigName("config")
-	viper.AddConfigPath("./config/")
+	viper.AddConfigPath(prefix + "/config/")
 
 	// Attempt to read the specified config file
 	if err := viper.ReadInConfig(); err != nil {

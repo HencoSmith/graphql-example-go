@@ -8,4 +8,6 @@ require (
 	github.com/graphql-go/handler v0.2.3
 	github.com/mnmtanish/go-graphiql v0.0.0-20160921055525-cef5a61bd62b
 	github.com/spf13/viper v1.4.0
+	github.com/stretchr/testify v1.3.0
+	github.com/tidwall/gjson v1.3.0
 )

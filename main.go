@@ -54,7 +54,7 @@ func main() {
 	// Prisma GraphQL playground
 	http.Handle("/playground/", http.StripPrefix("/playground/", http.FileServer(http.Dir("views"))))
 
-	config := source.GetConfig()
+	config := source.GetConfig(".")
 
 	// Server startup
 	fmt.Println("Server is running on port " + config.Server.Port)
