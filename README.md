@@ -23,12 +23,12 @@ Found in ./config/config.yml
 Test cases found in ./test
 Startup the server then run:
 ```
+cd test
 go test
 go test -run TestMyFunc
 ```
 
 # TODOS
-* Test Cases
 * Subscriptions
 * DB (containerized maybe?)
 * Code Coverage
@@ -39,3 +39,4 @@ go test -run TestMyFunc
 * Workers
 * Graceful Shutdown
 * heroku app hosting
+* JWT
