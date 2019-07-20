@@ -28,6 +28,12 @@ go test
 go test -run TestMyFunc
 ```
 
+# Database Setup
+```
+docker pull postgres
+docker run --name postgres-container -e POSTGRES_PASSWORD=password -e POSTGRES_USER=user -e POSTGRES_DB=test_db -d postgres
+```
+
 # TODOS
 * Subscriptions
 * DB (containerized maybe?)
