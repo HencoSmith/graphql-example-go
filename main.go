@@ -5,15 +5,13 @@ import (
 	"log"
 	"net/http"
 
-	"database/sql"
-
 	_ "github.com/lib/pq"
 
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/handler"
 
-	"github.com/doug-martin/goqu/v7"
-	_ "github.com/doug-martin/goqu/v7/dialect/postgres"
+	"github.com/doug-martin/goqu/v8"
+	_ "github.com/doug-martin/goqu/v8/dialect/postgres"
 
 	"github.com/HencoSmith/graphql-example-go/graphql/products"
 	"github.com/HencoSmith/graphql-example-go/models"
@@ -33,43 +31,29 @@ func initProductsData(p *[]models.Product) {
 }
 
 func main() {
-	// TESTING QUERY BUILDER
+	// Read configuration file
+	config := source.GetConfig(".")
+
+	// Connect to the database
+	db, errConnect := source.ConnectToDB(config)
+	if errConnect != nil {
+		log.Fatal(errConnect)
+	}
+
 	// Lookup the query builder dialect
 	dialect := goqu.Dialect("postgres")
 
-	dialectString := dialect.From("products").Where(goqu.Ex{"id": 10})
-	query, args, err := dialectString.ToSQL()
-	if err != nil {
-		fmt.Println("Failed to generate query string", err.Error())
-	} else {
-		fmt.Println(query, args)
+	// Setup DB tables and load with data if applicable
+	errInit := source.InitTables(dialect, db)
+	if errInit != nil {
+		log.Fatal(errInit)
 	}
-	// QUERY BUILDER TEST END
-	// TESTING DB CONNECTION
-	userStr := "user"
-	passwordStr := "password"
-	ipStr := "postgres"
-	portStr := "5432"
-	dbNameStr := "test_db"
-	connStr := "postgresql://" + userStr + ":" + passwordStr + "@" + ipStr + ":" + portStr + "/" + dbNameStr + "?sslmode=disable"
-	fmt.Println(connStr)
-	db, err := sql.Open("postgres", connStr)
-	if err != nil {
-		log.Fatal(err)
-	}
-	rows, err := db.Query(query)
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		fmt.Println(rows)
-	}
-	// DB CONNECTION TEST END
 
 	// Primary data initialization
 	initProductsData(&productArr)
 
 	// Bind Product Queries
-	var queryType = products.Queries(&productArr)
+	var queryType = products.Queries(&productArr, dialect, db)
 	// Bind Product Mutations
 	var mutationType = products.Mutations(&productArr)
 
@@ -93,8 +77,6 @@ func main() {
 
 	// Prisma GraphQL playground
 	http.Handle("/playground/", http.StripPrefix("/playground/", http.FileServer(http.Dir("views"))))
-
-	config := source.GetConfig(".")
 
 	// Server startup
 	fmt.Println("Server is running on port " + config.Server.Port)

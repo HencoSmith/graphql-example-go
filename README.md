@@ -28,10 +28,18 @@ go test
 go test -run TestMyFunc
 ```
 
+# Environment Variables
+These are optional, see configuration file for defaults.
+```
+POSTGRES_PASSWORD - Database.Password
+POSTGRES_USER - Database.User
+POSTGRES_DB - Database.Name
+```
+
 # Database Setup
 ```
 docker pull postgres
-docker run --name postgres-container -e POSTGRES_PASSWORD=password -e POSTGRES_USER=user -e POSTGRES_DB=test_db -d postgres
+docker run -p 5432:5432 --name postgres-container -e POSTGRES_PASSWORD=password -e POSTGRES_USER=user -e POSTGRES_DB=test_db -d postgres
 ```
 
 # TODOS
