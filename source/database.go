@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"strings"
 	"text/template"
 
 	configStruct "github.com/HencoSmith/graphql-example-go/config/struct"
@@ -64,15 +65,17 @@ func ConnectToDB(config configStruct.Configuration) (*sql.DB, error) {
 // InitTables - Create and load DB tables with data
 // returns an error or nil if no error ocurred
 func InitTables(dialect goqu.DialectWrapper, db *sql.DB) error {
+	fmt.Println("initializing DB...")
 	// Create the Products table if it does not already exist
-	createRows, createErr := db.Query(`
+	createTable, createErr := db.Query(`
 	CREATE TABLE IF NOT EXISTS public.products
 	(
 		id bigserial NOT NULL,
 		name character varying(128) NOT NULL,
 		info text,
 		price numeric NOT NULL,
-		PRIMARY KEY (id)
+		PRIMARY KEY (id),
+		CONSTRAINT products_name_key_unique UNIQUE (name)
 	)
 	WITH (
 		OIDS = FALSE
@@ -84,42 +87,41 @@ func InitTables(dialect goqu.DialectWrapper, db *sql.DB) error {
 	if createErr != nil {
 		return createErr
 	}
-	defer createRows.Close()
+	defer createTable.Close()
 
-	// TODO: complete insert of data
-	// dialectString := dialect.From("products").Insert(
-	// 	goqu.Record{
-	// 		"name":  "Chicha Morada",
-	// 		"info":  "Chicha morada is a beverage originated in the Andean regions of Perú but is actually consumed at a national level (wiki)",
-	// 		"price": 7.99,
-	// 	},
-	// 	goqu.Record{
-	// 		"name":  "Chicha de jora",
-	// 		"info":  "Chicha de jora is a corn beer chicha prepared by germinating maize, extracting the malt sugars, boiling the wort, and fermenting it in large vessels (traditionally huge earthenware vats) for several days (wiki)",
-	// 		"price": 5.95,
-	// 	},
-	// 	goqu.Record{
-	// 		"name":  "Pisco",
-	// 		"info":  "Pisco is a colorless or yellowish-to-amber colored brandy produced in winemaking regions of Peru and Chile (wiki)",
-	// 		"price": 9.95,
-	// 	},
-	// )
-	// query, args, insertErr := dialectString.toSQL()
-	// if insertErr != nil {
-	// 	return insertErr
-	// }
+	// Build Table Seed
+	insertDialect := goqu.Insert("products").Rows(
+		goqu.Record{
+			"name":  "Chicha Morada",
+			"info":  "Chicha morada is a beverage originated in the Andean regions of Perú but is actually consumed at a national level (wiki)",
+			"price": 7.99,
+		},
+		goqu.Record{
+			"name":  "Chicha de jora",
+			"info":  "Chicha de jora is a corn beer chicha prepared by germinating maize, extracting the malt sugars, boiling the wort, and fermenting it in large vessels (traditionally huge earthenware vats) for several days (wiki)",
+			"price": 5.95,
+		},
+		goqu.Record{
+			"name":  "Pisco",
+			"info":  "Pisco is a colorless or yellowish-to-amber colored brandy produced in winemaking regions of Peru and Chile (wiki)",
+			"price": 9.95,
+		},
+	)
+	insertQuery, _, toSQLErr := insertDialect.ToSQL()
+	if toSQLErr != nil {
+		return toSQLErr
+	}
 
-	// fmt.Println(query, args)
+	insertRes, insertErr := db.Query(insertQuery)
+	// Ignore constraint errors, which means that the data has already been inserted
+	if insertErr != nil {
+		if !strings.Contains(insertErr.Error(), `unique constraint "products_name_key_unique"`) {
+			return insertErr
+		}
+	} else {
+		defer insertRes.Close()
+	}
 
-	// var names []string
-	// for createRows.Next() {
-	// 	var name string
-	// 	if err := createRows.Scan(&name); err != nil {
-	// 		return err
-	// 	}
-	// 	names = append(names, name)
-	// }
-
-	// fmt.Println(names)
+	fmt.Println("OK")
 	return nil
 }

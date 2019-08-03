@@ -1,8 +1,6 @@
 package products
 
 import (
-	"fmt"
-
 	"database/sql"
 
 	"github.com/HencoSmith/graphql-example-go/models"
@@ -12,7 +10,7 @@ import (
 )
 
 // Queries - all GraphQL queries related to products
-func Queries(products *[]models.Product, dialect goqu.DialectWrapper, db *sql.DB) *graphql.Object {
+func Queries(dialect goqu.DialectWrapper, db *sql.DB) *graphql.Object {
 	return graphql.NewObject(
 		graphql.ObjectConfig{
 			Name: "Query",
@@ -32,11 +30,34 @@ func Queries(products *[]models.Product, dialect goqu.DialectWrapper, db *sql.DB
 						id, ok := p.Args["id"].(int)
 						if ok {
 							// Find product
-							for _, product := range *products {
-								if int(product.ID) == id {
-									return product, nil
-								}
+							dialectString := dialect.From("products").Where(goqu.Ex{
+								"id": id,
+							})
+							query, _, dialectErr := dialectString.ToSQL()
+							if dialectErr != nil {
+								return nil, dialectErr
 							}
+
+							rows, queryErr := db.Query(query)
+							if queryErr != nil {
+								return nil, queryErr
+							}
+							defer rows.Close()
+
+							var productsArr []models.Product
+							for rows.Next() {
+								var productRow = models.Product{}
+								scanErr := rows.Scan(&productRow.ID, &productRow.Name, &productRow.Info, &productRow.Price)
+								if scanErr != nil {
+									return nil, scanErr
+								}
+								productsArr = append(productsArr, productRow)
+							}
+							if errRows := rows.Err(); errRows != nil {
+								return nil, errRows
+							}
+
+							return &productsArr[0], nil
 						}
 						return nil, nil
 					},
@@ -48,24 +69,32 @@ func Queries(products *[]models.Product, dialect goqu.DialectWrapper, db *sql.DB
 					Type:        graphql.NewList(ProductType),
 					Description: "Get product list",
 					Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-						// TODO: finish query builder
-						dialectString := dialect.From("products").Where(goqu.Ex{"id": 10})
-						query, args, err := dialectString.ToSQL()
-						if err != nil {
-							fmt.Println("Failed to generate query string", err.Error())
-						} else {
-							fmt.Println(query, args)
+						dialectString := dialect.From("products").Order(goqu.C("id").Asc())
+						query, _, dialectErr := dialectString.ToSQL()
+						if dialectErr != nil {
+							return nil, dialectErr
 						}
 
-						rows, err := db.Query(query)
-						if err != nil {
-							fmt.Println(err)
-						} else {
-							fmt.Println(rows)
+						rows, queryErr := db.Query(query)
+						if queryErr != nil {
+							return nil, queryErr
 						}
-						// END
+						defer rows.Close()
 
-						return *products, nil
+						var productsArr []models.Product
+						for rows.Next() {
+							var productRow = models.Product{}
+							scanErr := rows.Scan(&productRow.ID, &productRow.Name, &productRow.Info, &productRow.Price)
+							if scanErr != nil {
+								return nil, scanErr
+							}
+							productsArr = append(productsArr, productRow)
+						}
+						if errRows := rows.Err(); errRows != nil {
+							return nil, errRows
+						}
+
+						return &productsArr, nil
 					},
 				},
 			},

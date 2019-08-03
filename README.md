@@ -44,9 +44,7 @@ docker run -p 5432:5432 --name postgres-container -e POSTGRES_PASSWORD=password 
 
 # TODOS
 * Subscriptions
-* DB (containerized maybe?)
 * Code Coverage
-* Documentation Generation
 * Performance Testing
 * API Analytics
 * Packaging
