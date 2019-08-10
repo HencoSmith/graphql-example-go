@@ -13,12 +13,9 @@ import (
 	"github.com/doug-martin/goqu/v8"
 	_ "github.com/doug-martin/goqu/v8/dialect/postgres"
 
-	"github.com/HencoSmith/graphql-example-go/graphql/products"
+	"github.com/HencoSmith/graphql-example-go/graphql/movies"
 	source "github.com/HencoSmith/graphql-example-go/source"
 )
-
-// Refer to: https://github.com/graphql-go/graphql/tree/master/examples/crud
-// Reworking into a project template
 
 func main() {
 	// Read configuration file
@@ -39,10 +36,10 @@ func main() {
 		log.Fatal(errInit)
 	}
 
-	// Bind Product Queries
-	var queryType = products.Queries(dialect, db)
-	// Bind Product Mutations
-	var mutationType = products.Mutations(dialect, db)
+	// Bind Queries
+	var queryType = movies.Queries(dialect, db)
+	// Bind Mutations
+	var mutationType = movies.Mutations(dialect, db)
 
 	// Generate the schema
 	var schema, _ = graphql.NewSchema(

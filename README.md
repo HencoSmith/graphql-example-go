@@ -43,6 +43,13 @@ docker run -p 5432:5432 --name postgres-container -e POSTGRES_PASSWORD=password 
 ```
 
 # TODOS
+* Fix mutation test cases
+* Retrieve Movie Ratings
+* Rate a movie
+* Retest queries properly
+* Partial movie updates
+
+* API keys - JWT
 * Subscriptions
 * Code Coverage
 * Performance Testing
@@ -51,4 +58,3 @@ docker run -p 5432:5432 --name postgres-container -e POSTGRES_PASSWORD=password 
 * Workers
 * Graceful Shutdown
 * heroku app hosting
-* JWT

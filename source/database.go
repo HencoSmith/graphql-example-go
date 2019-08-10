@@ -66,22 +66,26 @@ func ConnectToDB(config configStruct.Configuration) (*sql.DB, error) {
 // returns an error or nil if no error ocurred
 func InitTables(dialect goqu.DialectWrapper, db *sql.DB) error {
 	fmt.Println("initializing DB...")
-	// Create the Products table if it does not already exist
+	// Create the table(s) if it does not already exist
 	createTable, createErr := db.Query(`
-	CREATE TABLE IF NOT EXISTS public.products
+	CREATE TABLE IF NOT EXISTS public.movies
 	(
-		id bigserial NOT NULL,
+		id uuid NOT NULL,
+		created_at timestamp with time zone NOT NULL DEFAULT now(),
+		updated_at timestamp with time zone NOT NULL DEFAULT now(),
+		deleted_at timestamp with time zone,
 		name character varying(128) NOT NULL,
-		info text,
-		price numeric NOT NULL,
-		PRIMARY KEY (id),
-		CONSTRAINT products_name_key_unique UNIQUE (name)
+		release_year integer NOT NULL,
+		description text,
+		rating numeric NOT NULL DEFAULT '0.0',
+		review_count bigint NOT NULL DEFAULT 0,
+		PRIMARY KEY (id)
 	)
 	WITH (
 		OIDS = FALSE
 	);
-
-	ALTER TABLE public.products
+	
+	ALTER TABLE public.movies
 		OWNER to "user";
 	`)
 	if createErr != nil {
@@ -89,37 +93,40 @@ func InitTables(dialect goqu.DialectWrapper, db *sql.DB) error {
 	}
 	defer createTable.Close()
 
-	// Build Table Seed
-	insertDialect := goqu.Insert("products").Rows(
+	// Build Movies Table Seed
+	insertMoviesDialect := goqu.Insert("movies").Rows(
 		goqu.Record{
-			"name":  "Chicha Morada",
-			"info":  "Chicha morada is a beverage originated in the Andean regions of Perú but is actually consumed at a national level (wiki)",
-			"price": 7.99,
+			"id":           "13cbd25a-4a9d-4e71-9c39-4fc515083c95",
+			"name":         "Scary Stories to Tell in the Dark",
+			"release_year": 2019,
+			"description":  "A group of teens face their fears in order to save their lives.",
 		},
 		goqu.Record{
-			"name":  "Chicha de jora",
-			"info":  "Chicha de jora is a corn beer chicha prepared by germinating maize, extracting the malt sugars, boiling the wort, and fermenting it in large vessels (traditionally huge earthenware vats) for several days (wiki)",
-			"price": 5.95,
+			"id":           "77034dd5-d3e4-4a44-a7fa-c2730dfe5370",
+			"name":         "Dora and the Lost City of Gold",
+			"release_year": 2019,
+			"description":  "Dora, a teenage explorer, leads her friends on an adventure to save her parents and solve the mystery behind a lost city of gold.",
 		},
 		goqu.Record{
-			"name":  "Pisco",
-			"info":  "Pisco is a colorless or yellowish-to-amber colored brandy produced in winemaking regions of Peru and Chile (wiki)",
-			"price": 9.95,
+			"id":           "a774e5ff-a5f9-4643-832d-27d131344fe3",
+			"name":         "The Art of Racing in the Rain",
+			"release_year": 2019,
+			"description":  "Through his bond with his owner, aspiring Formula One race car driver Denny, golden retriever Enzo learns that the techniques needed on the racetrack can also be used to successfully navigate the journey of life.",
 		},
 	)
-	insertQuery, _, toSQLErr := insertDialect.ToSQL()
-	if toSQLErr != nil {
-		return toSQLErr
+	insertMoviesQuery, _, moviesToSQLErr := insertMoviesDialect.ToSQL()
+	if moviesToSQLErr != nil {
+		return moviesToSQLErr
 	}
 
-	insertRes, insertErr := db.Query(insertQuery)
+	insertMoviesRes, insertMoviesErr := db.Query(insertMoviesQuery)
 	// Ignore constraint errors, which means that the data has already been inserted
-	if insertErr != nil {
-		if !strings.Contains(insertErr.Error(), `unique constraint "products_name_key_unique"`) {
-			return insertErr
+	if insertMoviesErr != nil {
+		if !strings.Contains(insertMoviesErr.Error(), `unique constraint "movies_pkey"`) {
+			return insertMoviesErr
 		}
 	} else {
-		defer insertRes.Close()
+		defer insertMoviesRes.Close()
 	}
 
 	fmt.Println("OK")
