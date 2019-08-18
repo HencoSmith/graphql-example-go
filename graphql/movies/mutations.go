@@ -28,7 +28,17 @@ func findMovie(dialect goqu.DialectWrapper, db *sql.DB, expression goqu.Ex) (*mo
 	var moviesArr []models.Movie
 	for rows.Next() {
 		var movieRow = models.Movie{}
-		scanErr := rows.Scan(&movieRow.ID, &movieRow.Name, &movieRow.Description, &movieRow.ReleaseYear)
+		scanErr := rows.Scan(
+			&movieRow.ID,
+			&movieRow.CreatedAt,
+			&movieRow.UpdatedAt,
+			&movieRow.DeletedAt,
+			&movieRow.Name,
+			&movieRow.ReleaseYear,
+			&movieRow.Description,
+			&movieRow.Rating,
+			&movieRow.ReviewCount,
+		)
 		if scanErr != nil {
 			return nil, scanErr
 		}
@@ -36,6 +46,10 @@ func findMovie(dialect goqu.DialectWrapper, db *sql.DB, expression goqu.Ex) (*mo
 	}
 	if errRows := rows.Err(); errRows != nil {
 		return nil, errRows
+	}
+
+	if len(moviesArr) < 1 {
+		return nil, nil
 	}
 
 	return &moviesArr[0], nil
@@ -62,12 +76,15 @@ func Mutations(dialect goqu.DialectWrapper, db *sql.DB) *graphql.Object {
 				},
 				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 					// Insert the new movie
+					name, _ := params.Args["name"].(string)
+					description, _ := params.Args["description"].(string)
+					releaseYear, _ := params.Args["releaseYear"].(int)
 					insertDialect := goqu.Insert("movies").Rows(
 						goqu.Record{
 							"id":           uuid.NewV4(),
-							"name":         params.Args["name"].(string),
-							"description":  params.Args["description"].(string),
-							"release_year": params.Args["releaseYear"].(int64),
+							"name":         name,
+							"description":  description,
+							"release_year": releaseYear,
 						},
 					)
 					insertQuery, _, toSQLErr := insertDialect.ToSQL()
@@ -116,10 +133,11 @@ func Mutations(dialect goqu.DialectWrapper, db *sql.DB) *graphql.Object {
 						goqu.Record{
 							"name":         params.Args["name"].(string),
 							"description":  params.Args["description"].(string),
-							"release_year": params.Args["releaseYear"].(int64),
+							"release_year": params.Args["releaseYear"].(int),
 						},
 					).Where(goqu.Ex{
-						"id": id,
+						"id":         id,
+						"deleted_at": nil,
 					})
 					updateQuery, _, toSQLErr := updateDialect.ToSQL()
 					if toSQLErr != nil {
@@ -146,7 +164,7 @@ func Mutations(dialect goqu.DialectWrapper, db *sql.DB) *graphql.Object {
 				Description: "Delete movie by ID",
 				Args: graphql.FieldConfigArgument{
 					"id": &graphql.ArgumentConfig{
-						Type: graphql.NewNonNull(graphql.Int),
+						Type: graphql.NewNonNull(graphql.String),
 					},
 				},
 				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
