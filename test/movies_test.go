@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"reflect"
 	"text/template"
+	"fmt"
 
 	"testing"
 
@@ -23,6 +24,11 @@ type TestMovie struct {
 type TestMovieUpdate struct {
 	ID, Name, Description string
 	ReleaseYear           int64
+}
+
+type TestMovieRating struct {
+	ID  string
+	Rating           int64
 }
 
 func CreateMovie(input TestMovie) (body []byte, err error) {
@@ -108,6 +114,45 @@ func UpdateMovie(input TestMovieUpdate) (body []byte, err error) {
 	}
 
 	query := `mutation{update(id:"{{.ID}}",name:"{{.Name}}",description:"{{.Description}}",releaseYear:{{.ReleaseYear}}){id,name,description,release_year}}`
+	queryTemplate := template.Must(template.New("query").Parse(query))
+	var queryParsed bytes.Buffer
+	if errExecute := queryTemplate.Execute(&queryParsed, input); errExecute != nil {
+		return nil, errExecute
+	}
+
+	// Parse the query parameters
+	v := url.Values{}
+	v.Add("query", queryParsed.String())
+
+	// Add the encoded query parameters to the base URL and format as a String
+	strURL := URL.String() + v.Encode()
+
+	// Make the GraphQL mutation request
+	res, errPost := http.Post(strURL, "application/json", bytes.NewBuffer([]byte("{}")))
+	if errPost != nil {
+		return nil, errPost
+	}
+	defer res.Body.Close()
+
+	// Handle the response
+	buff, errRead := ioutil.ReadAll(res.Body)
+	if errRead != nil {
+		return nil, errRead
+	}
+
+	return buff, nil
+}
+
+func RateMovie(input TestMovieRating) (body []byte, err error) {
+	config := source.GetConfig("..")
+
+	// Parse the base URL
+	URL, errParse := url.Parse("http://localhost:" + config.Server.Port + "/graphql?")
+	if errParse != nil {
+		return nil, errParse
+	}
+
+	query := `mutation{rate(id:"{{.ID}}",rating:{{.Rating}})}`
 	queryTemplate := template.Must(template.New("query").Parse(query))
 	var queryParsed bytes.Buffer
 	if errExecute := queryTemplate.Execute(&queryParsed, input); errExecute != nil {
@@ -305,4 +350,39 @@ func TestUpdateMovie(t *testing.T) {
 	assert.Equal(t, nameReverse, inputReverse.Name, "Names should be equal")
 	assert.Equal(t, descriptionReverse, inputReverse.Description, "Description should be equal")
 	assert.Equal(t, releaseYearReverse, inputReverse.ReleaseYear, "Release Years should be equal")
+}
+
+func TestRateMovie(t *testing.T) {
+	input := TestMovieRating{
+		ID:          "77034dd5-d3e4-4a44-a7fa-c2730dfe5370",
+		Rating:        8,
+	}
+
+	buff, errUpdate := RateMovie(input)
+	if errUpdate != nil {
+		t.Fatal(errUpdate)
+	}
+
+	assert.NotNil(t, buff)
+
+	strUpdateBody := string(buff)
+	fmt.Println(strUpdateBody)
+	
+
+	// Reverse the changes
+	inputReverse := TestMovieRating{
+		ID:          "77034dd5-d3e4-4a44-a7fa-c2730dfe5370",
+		Rating: 0,
+	}
+
+	buffReverse, errUpdateReverse := RateMovie(inputReverse)
+	if errUpdateReverse != nil {
+		t.Fatal(errUpdateReverse)
+	}
+
+	assert.NotNil(t, buffReverse)
+
+	strReverseBody := string(buffReverse)
+	fmt.Println(strReverseBody)
+	
 }

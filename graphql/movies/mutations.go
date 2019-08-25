@@ -2,6 +2,8 @@ package movies
 
 import (
 	"database/sql"
+	"fmt"
+	"math"
 	"time"
 
 	"github.com/HencoSmith/graphql-example-go/models"
@@ -199,6 +201,67 @@ func Mutations(dialect goqu.DialectWrapper, db *sql.DB) *graphql.Object {
 					defer deleteRes.Close()
 
 					return movie, nil
+				},
+			},
+
+			"rate": &graphql.Field{
+				Type:        MovieType,
+				Description: "Rate a movie by ID",
+				Args: graphql.FieldConfigArgument{
+					"id": &graphql.ArgumentConfig{
+						Type: graphql.NewNonNull(graphql.String),
+					},
+					"rating": &graphql.ArgumentConfig{
+						Type:        graphql.NewNonNull(graphql.Int),
+						Description: "0 - 10 (0 - worst; 10 - best)",
+					},
+				},
+				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+					id, _ := params.Args["id"].(string)
+					rating, _ := params.Args["rating"].(int)
+
+					// Limit rating 0 - 10
+					formattedRating := math.Max(float64(rating), float64(0))
+					formattedRating = math.Min(float64(formattedRating), float64(10))
+
+					// Find the current rating
+					movie, findErr := findMovie(dialect, db, goqu.Ex{
+						"id": id,
+					})
+
+					if findErr != nil {
+						return nil, findErr
+					}
+
+					// TODO: replace with running average
+					fmt.Println(movie.Rating, movie.ReviewCount)
+					newAverage := (float64(movie.Rating) + formattedRating) / float64(2)
+
+					// Update the existing movie
+					updateDialect := goqu.Update("movies").Set(
+						goqu.Record{
+							"rating":       int32(newAverage),
+							"review_count": int32(movie.ReviewCount) + int32(1),
+						},
+					).Where(goqu.Ex{
+						"id":         id,
+						"deleted_at": nil,
+					})
+					updateQuery, _, toSQLErr := updateDialect.ToSQL()
+					if toSQLErr != nil {
+						return nil, toSQLErr
+					}
+
+					updateRes, updateErr := db.Query(updateQuery)
+					if updateErr != nil {
+						return nil, updateErr
+					}
+
+					defer updateRes.Close()
+
+					// TODO: fix return type seen on schema
+
+					return "success", nil
 				},
 			},
 		},

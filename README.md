@@ -43,8 +43,7 @@ docker run -p 5432:5432 --name postgres-container -e POSTGRES_PASSWORD=password 
 ```
 
 # TODOS
-* Retrieve Movie Ratings
-* Rate a movie
+* Rate a movie (fix return type & running average)
 * Partial movie updates
 
 * API keys - JWT
