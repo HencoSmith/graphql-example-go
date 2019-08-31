@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"reflect"
 	"text/template"
-	"fmt"
 
 	"testing"
 
@@ -366,7 +365,8 @@ func TestRateMovie(t *testing.T) {
 	assert.NotNil(t, buff)
 
 	strUpdateBody := string(buff)
-	fmt.Println(strUpdateBody)
+	status := gjson.Get(strUpdateBody, "data.rate").String()
+	assert.Equal(t, status, "success", "Rating failed")
 	
 
 	// Reverse the changes
@@ -383,6 +383,7 @@ func TestRateMovie(t *testing.T) {
 	assert.NotNil(t, buffReverse)
 
 	strReverseBody := string(buffReverse)
-	fmt.Println(strReverseBody)
+	statusReverse := gjson.Get(strReverseBody, "data.rate").String()
+	assert.Equal(t, statusReverse, "success", "Rating reverse failed")
 	
 }

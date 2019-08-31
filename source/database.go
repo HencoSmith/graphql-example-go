@@ -84,9 +84,68 @@ func InitTables(dialect goqu.DialectWrapper, db *sql.DB) error {
 	WITH (
 		OIDS = FALSE
 	);
+
+	DROP INDEX IF EXISTS movies_id_idx;
+
+	CREATE INDEX movies_id_idx
+		ON public.movies USING btree
+		(id ASC NULLS LAST)
+		TABLESPACE pg_default;
+
+	DROP INDEX IF EXISTS movies_deleted_at_idx;
+
+	CREATE INDEX movies_deleted_at_idx
+		ON public.movies USING btree
+		(deleted_at ASC NULLS FIRST)
+		TABLESPACE pg_default;
 	
 	ALTER TABLE public.movies
 		OWNER to "user";
+
+	CREATE TABLE IF NOT EXISTS public.movies_reviews
+	(
+		id uuid NOT NULL,
+		created_at timestamp with time zone NOT NULL DEFAULT now(),
+		updated_at timestamp with time zone NOT NULL DEFAULT now(),
+		deleted_at timestamp with time zone,
+		movies_id uuid NOT NULL,
+		rating numeric NOT NULL,
+		PRIMARY KEY (id)
+	)
+	WITH (
+		OIDS = FALSE
+	);
+
+	DROP INDEX IF EXISTS movies_reviews_id_idx;
+
+	CREATE INDEX movies_reviews_id_idx
+		ON public.movies_reviews USING btree
+		(id ASC NULLS LAST)
+		TABLESPACE pg_default;
+
+	DROP INDEX IF EXISTS movies_reviews_deleted_at_idx;
+
+	CREATE INDEX movies_reviews_deleted_at_idx
+		ON public.movies_reviews USING btree
+		(deleted_at ASC NULLS FIRST)
+		TABLESPACE pg_default;
+	
+	ALTER TABLE public.movies_reviews
+		OWNER to "user";
+
+	ALTER TABLE public.movies_reviews
+		DROP CONSTRAINT IF EXISTS movies_reviews_movies_id_fkey;
+
+	ALTER TABLE public.movies_reviews
+		ADD CONSTRAINT movies_reviews_movies_id_fkey FOREIGN KEY (movies_id)
+		REFERENCES public.movies (id) MATCH SIMPLE
+		ON UPDATE NO ACTION
+		ON DELETE NO ACTION;
+
+	DROP INDEX IF EXISTS fki_movies_reviews_movies_id_fkey;
+	
+	CREATE INDEX fki_movies_reviews_movies_id_fkey
+		ON public.movies_reviews(movies_id);
 	`)
 	if createErr != nil {
 		return createErr
