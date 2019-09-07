@@ -163,26 +163,37 @@ func Mutations(dialect goqu.DialectWrapper, db *sql.DB) *graphql.Object {
 						Type: graphql.NewNonNull(graphql.String),
 					},
 					"name": &graphql.ArgumentConfig{
-						Type: graphql.NewNonNull(graphql.String),
+						Type: graphql.String,
 					},
 					"description": &graphql.ArgumentConfig{
-						Type: graphql.NewNonNull(graphql.String),
+						Type: graphql.String,
 					},
 					"releaseYear": &graphql.ArgumentConfig{
-						Type: graphql.NewNonNull(graphql.Int),
+						Type: graphql.Int,
 					},
 				},
 				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 					id, _ := params.Args["id"].(string)
+					name, _ := params.Args["name"].(string)
+					description, _ := params.Args["description"].(string)
+					releaseYear, _ := params.Args["releaseYear"].(int)
+					updatedAt := time.Now().Format(time.RFC3339)
+
+					updateFields := goqu.Record{}
+					if len(name) > 0 {
+						updateFields["name"] = name
+					}
+					if len(description) > 0 {
+						updateFields["description"] = description
+					}
+					if releaseYear > 1900 {
+						updateFields["release_year"] = releaseYear
+					}
+					updateFields["updated_at"] = updatedAt
 
 					// Update the existing movie
 					updateDialect := goqu.Update("movies").Set(
-						goqu.Record{
-							"name":         params.Args["name"].(string),
-							"description":  params.Args["description"].(string),
-							"release_year": params.Args["releaseYear"].(int),
-							"updated_at":   time.Now().Format(time.RFC3339),
-						},
+						updateFields,
 					).Where(goqu.Ex{
 						"id":         id,
 						"deleted_at": nil,

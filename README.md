@@ -43,7 +43,6 @@ docker run -p 5432:5432 --name postgres-container -e POSTGRES_PASSWORD=password 
 ```
 
 # TODOS
-* Partial movie updates
 * API keys - JWT
 * Subscriptions
 * Code Coverage
