@@ -1,3 +1,5 @@
 .vscode/
 graphql-example-go.exe
 debug
+__debug_bin
+__debug_bin~

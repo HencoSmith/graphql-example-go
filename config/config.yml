@@ -1,5 +1,6 @@
 server:
  port: "8080"
+ timeout: 5
 database:
  user: "user"
  host: "localhost"

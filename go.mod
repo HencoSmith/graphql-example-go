@@ -14,4 +14,5 @@ require (
 	github.com/stretchr/testify v1.3.0
 	github.com/tidwall/gjson v1.3.0
 	golang.org/x/sys v0.0.0-20190726091711-fc99dfbffb4e // indirect
+	gopkg.in/tylerb/graceful.v1 v1.2.15
 )

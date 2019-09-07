@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
+
+	"gopkg.in/tylerb/graceful.v1"
 
 	_ "github.com/lib/pq"
 
@@ -56,13 +59,16 @@ func main() {
 		GraphiQL: true,
 	})
 
+	// Setup server
+	mux := http.NewServeMux()
+
 	// GraphQL endpoint
-	http.Handle("/graphql", h)
+	mux.Handle("/graphql", h)
 
 	// Prisma GraphQL playground
-	http.Handle("/playground/", http.StripPrefix("/playground/", http.FileServer(http.Dir("views"))))
+	mux.Handle("/playground/", http.StripPrefix("/playground/", http.FileServer(http.Dir("views"))))
 
 	// Server startup
-	fmt.Println("Server is running on port " + config.Server.Port)
-	http.ListenAndServe(":"+config.Server.Port, nil)
+	fmt.Println("Server is running on port "+config.Server.Port, "with shutdown timeout of", config.Server.Timeout*time.Second)
+	graceful.Run(":"+config.Server.Port, config.Server.Timeout*time.Second, mux)
 }

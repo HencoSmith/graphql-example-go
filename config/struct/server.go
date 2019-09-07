@@ -1,6 +1,11 @@
 package config
 
+import (
+	"time"
+)
+
 // ServerConfiguration relates to server variables
 type ServerConfiguration struct {
-	Port string
+	Port    string
+	Timeout time.Duration
 }

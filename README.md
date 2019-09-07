@@ -50,5 +50,5 @@ docker run -p 5432:5432 --name postgres-container -e POSTGRES_PASSWORD=password 
 * API Analytics
 * Packaging
 * Workers
-* Graceful Shutdown
 * heroku app hosting
+* Update readme with godoc reference, build status, coverage etc. tags
