@@ -74,6 +74,7 @@ func InitTables(dialect goqu.DialectWrapper, db *sql.DB) error {
 		created_at timestamp with time zone NOT NULL DEFAULT now(),
 		updated_at timestamp with time zone NOT NULL DEFAULT now(),
 		deleted_at timestamp with time zone,
+		users_id uuid,
 		name character varying(128) NOT NULL,
 		release_year integer NOT NULL,
 		description text,
@@ -102,6 +103,20 @@ func InitTables(dialect goqu.DialectWrapper, db *sql.DB) error {
 	ALTER TABLE public.movies
 		OWNER to "user";
 
+	ALTER TABLE public.movies
+		DROP CONSTRAINT IF EXISTS movies_users_id_fkey;
+	
+	ALTER TABLE public.movies
+		ADD CONSTRAINT movies_users_id_fkey FOREIGN KEY (users_id)
+		REFERENCES public.users (id) MATCH SIMPLE
+		ON UPDATE NO ACTION
+		ON DELETE NO ACTION;
+
+	DROP INDEX IF EXISTS fki_movies_users_id_fkey;
+	
+	CREATE INDEX fki_movies_users_id_fkey
+		ON public.movies(users_id);
+
 	CREATE TABLE IF NOT EXISTS public.movies_reviews
 	(
 		id uuid NOT NULL,
@@ -109,6 +124,7 @@ func InitTables(dialect goqu.DialectWrapper, db *sql.DB) error {
 		updated_at timestamp with time zone NOT NULL DEFAULT now(),
 		deleted_at timestamp with time zone,
 		movies_id uuid NOT NULL,
+		users_id uuid,
 		rating numeric NOT NULL,
 		PRIMARY KEY (id)
 	)
@@ -146,6 +162,98 @@ func InitTables(dialect goqu.DialectWrapper, db *sql.DB) error {
 	
 	CREATE INDEX fki_movies_reviews_movies_id_fkey
 		ON public.movies_reviews(movies_id);
+
+	ALTER TABLE public.movies_reviews
+		DROP CONSTRAINT IF EXISTS movies_reviews_users_id_fkey;
+
+	ALTER TABLE public.movies_reviews
+		ADD CONSTRAINT movies_reviews_users_id_fkey FOREIGN KEY (users_id)
+		REFERENCES public.users (id) MATCH SIMPLE
+		ON UPDATE NO ACTION
+		ON DELETE NO ACTION;
+	
+	DROP INDEX IF EXISTS fki_movies_reviews_users_id_fkey;
+
+	CREATE INDEX fki_movies_reviews_users_id_fkey
+		ON public.movies_reviews(users_id);
+
+	CREATE TABLE IF NOT EXISTS public.users
+	(
+		id uuid NOT NULL,
+		created_at timestamp with time zone NOT NULL DEFAULT now(),
+		updated_at timestamp with time zone NOT NULL DEFAULT now(),
+		deleted_at timestamp with time zone,
+		email character varying(64) NOT NULL,
+		PRIMARY KEY (id)
+	)
+	WITH (
+		OIDS = FALSE
+	)
+	TABLESPACE pg_default;
+	
+	ALTER TABLE public.users
+		OWNER to "user";
+
+	DROP INDEX IF EXISTS users_id_idx;
+
+	CREATE INDEX users_id_idx
+		ON public.users USING btree
+		(id ASC NULLS LAST)
+		TABLESPACE pg_default;
+
+	DROP INDEX IF EXISTS users_deleted_at_idx;
+
+	CREATE INDEX users_deleted_at_idx
+		ON public.users USING btree
+		(deleted_at ASC NULLS FIRST)
+		TABLESPACE pg_default;
+
+	CREATE TABLE IF NOT EXISTS public.tokens
+	(
+		id uuid NOT NULL,
+		created_at timestamp with time zone NOT NULL DEFAULT now(),
+		updated_at timestamp with time zone NOT NULL DEFAULT now(),
+		deleted_at timestamp with time zone,
+		users_id uuid NOT NULL,
+		encrypted_token character varying(256) NOT NULL,
+		expires_at timestamp with time zone NOT NULL,
+		PRIMARY KEY (id)
+	)
+	WITH (
+		OIDS = FALSE
+	)
+	TABLESPACE pg_default;
+	
+	ALTER TABLE public.tokens
+		OWNER to "user";
+
+	ALTER TABLE public.tokens
+		DROP CONSTRAINT IF EXISTS tokens_users_id_fkey;
+
+	ALTER TABLE public.tokens
+		ADD CONSTRAINT tokens_users_id_fkey FOREIGN KEY (users_id)
+		REFERENCES public.users (id) MATCH SIMPLE
+		ON UPDATE NO ACTION
+		ON DELETE NO ACTION;
+
+	DROP INDEX IF EXISTS fki_tokens_users_id_fkey;
+
+	CREATE INDEX fki_tokens_users_id_fkey
+		ON public.tokens(users_id);
+
+	DROP INDEX IF EXISTS tokens_id_idx;
+
+	CREATE INDEX tokens_id_idx
+		ON public.tokens USING btree
+		(id ASC NULLS LAST)
+		TABLESPACE pg_default;
+
+	DROP INDEX IF EXISTS tokens_deleted_at_idx;
+
+	CREATE INDEX tokens_deleted_at_idx
+		ON public.tokens USING btree
+		(deleted_at ASC NULLS FIRST)
+		TABLESPACE pg_default;
 	`)
 	if createErr != nil {
 		return createErr

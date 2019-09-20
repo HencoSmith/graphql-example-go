@@ -44,6 +44,8 @@ docker run -p 5432:5432 --name postgres-container -e POSTGRES_PASSWORD=password 
 
 # TODOS
 * API keys - JWT
+* Add 'NOT NULL' to users_id for movies and movies_reviews
+* Move DB creation string to file
 * Subscriptions
 * Code Coverage
 * Performance Testing
