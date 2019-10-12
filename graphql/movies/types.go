@@ -21,6 +21,9 @@ var MovieType = graphql.NewObject(
 			"deleted_at": &graphql.Field{
 				Type: graphql.String,
 			},
+			"users_id": &graphql.Field{
+				Type: graphql.String,
+			},
 			"name": &graphql.Field{
 				Type: graphql.String,
 			},

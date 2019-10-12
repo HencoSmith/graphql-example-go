@@ -38,6 +38,7 @@ func findMovie(dialect goqu.DialectWrapper, db *sql.DB, expression goqu.Ex) (*mo
 			&movieRow.CreatedAt,
 			&movieRow.UpdatedAt,
 			&movieRow.DeletedAt,
+			&movieRow.UsersID,
 			&movieRow.Name,
 			&movieRow.ReleaseYear,
 			&movieRow.Description,
@@ -132,6 +133,8 @@ func Mutations(dialect goqu.DialectWrapper, db *sql.DB) *graphql.Object {
 							"name":         name,
 							"description":  description,
 							"release_year": releaseYear,
+							// TODO: remove hardcoded value once authentication done
+							"users_id": "d56d4bff-4e7e-4cf9-a3d2-38973c9dd57d",
 						},
 					)
 					insertQuery, _, toSQLErr := insertDialect.ToSQL()
@@ -197,6 +200,8 @@ func Mutations(dialect goqu.DialectWrapper, db *sql.DB) *graphql.Object {
 					).Where(goqu.Ex{
 						"id":         id,
 						"deleted_at": nil,
+						// TODO: remove hardcoded value once authentication done
+						"users_id": "d56d4bff-4e7e-4cf9-a3d2-38973c9dd57d",
 					})
 					updateQuery, _, toSQLErr := updateDialect.ToSQL()
 					if toSQLErr != nil {
@@ -244,6 +249,8 @@ func Mutations(dialect goqu.DialectWrapper, db *sql.DB) *graphql.Object {
 						},
 					).Where(goqu.Ex{
 						"id": id,
+						// TODO: remove hardcoded value once authentication done
+						"users_id": "d56d4bff-4e7e-4cf9-a3d2-38973c9dd57d",
 					})
 					deleteQuery, _, toSQLErr := deleteDialect.ToSQL()
 					if toSQLErr != nil {
@@ -296,6 +303,8 @@ func Mutations(dialect goqu.DialectWrapper, db *sql.DB) *graphql.Object {
 							"id":        uuid.NewV4(),
 							"rating":    formattedRating,
 							"movies_id": movie.ID,
+							// TODO: remove hardcoded value once authentication done
+							"users_id": "d56d4bff-4e7e-4cf9-a3d2-38973c9dd57d",
 						},
 					)
 					insertQuery, _, insertToSQLErr := insertDialect.ToSQL()

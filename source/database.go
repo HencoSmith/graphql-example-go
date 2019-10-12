@@ -62,6 +62,25 @@ func ConnectToDB(config configStruct.Configuration) (*sql.DB, error) {
 	return sql.Open("postgres", connStr)
 }
 
+func seedDB(db *sql.DB, tableName string, records []interface{}) error {
+	insertDialect := goqu.Insert(tableName).Rows(records...)
+	insertQuery, _, SQLErr := insertDialect.ToSQL()
+	if SQLErr != nil {
+		return SQLErr
+	}
+
+	insertRes, insertErr := db.Query(insertQuery)
+	// Ignore constraint errors, which means that the data has already been inserted
+	if insertErr != nil {
+		if !strings.Contains(insertErr.Error(), `unique constraint "`+tableName+`_pkey"`) {
+			return insertErr
+		}
+	} else {
+		defer insertRes.Close()
+	}
+	return nil
+}
+
 // InitTables - Create and load DB tables with data
 // returns an error or nil if no error ocurred
 func InitTables(dialect goqu.DialectWrapper, db *sql.DB) error {
@@ -74,7 +93,7 @@ func InitTables(dialect goqu.DialectWrapper, db *sql.DB) error {
 		created_at timestamp with time zone NOT NULL DEFAULT now(),
 		updated_at timestamp with time zone NOT NULL DEFAULT now(),
 		deleted_at timestamp with time zone,
-		users_id uuid,
+		users_id uuid NOT NULL,
 		name character varying(128) NOT NULL,
 		release_year integer NOT NULL,
 		description text,
@@ -85,6 +104,63 @@ func InitTables(dialect goqu.DialectWrapper, db *sql.DB) error {
 	WITH (
 		OIDS = FALSE
 	);
+
+	ALTER TABLE public.movies
+		OWNER to "user";
+
+	CREATE TABLE IF NOT EXISTS public.movies_reviews
+	(
+		id uuid NOT NULL,
+		created_at timestamp with time zone NOT NULL DEFAULT now(),
+		updated_at timestamp with time zone NOT NULL DEFAULT now(),
+		deleted_at timestamp with time zone,
+		movies_id uuid NOT NULL,
+		users_id uuid NOT NULL,
+		rating numeric NOT NULL,
+		PRIMARY KEY (id)
+	)
+	WITH (
+		OIDS = FALSE
+	);
+
+	ALTER TABLE public.movies_reviews
+		OWNER to "user";
+
+	CREATE TABLE IF NOT EXISTS public.users
+	(
+		id uuid NOT NULL,
+		created_at timestamp with time zone NOT NULL DEFAULT now(),
+		updated_at timestamp with time zone NOT NULL DEFAULT now(),
+		deleted_at timestamp with time zone,
+		email character varying(64) NOT NULL,
+		PRIMARY KEY (id)
+	)
+	WITH (
+		OIDS = FALSE
+	)
+	TABLESPACE pg_default;
+	
+	ALTER TABLE public.users
+		OWNER to "user";
+
+	CREATE TABLE IF NOT EXISTS public.tokens
+	(
+		id uuid NOT NULL,
+		created_at timestamp with time zone NOT NULL DEFAULT now(),
+		updated_at timestamp with time zone NOT NULL DEFAULT now(),
+		deleted_at timestamp with time zone,
+		users_id uuid NOT NULL,
+		encrypted_token character varying(256) NOT NULL,
+		expires_at timestamp with time zone NOT NULL,
+		PRIMARY KEY (id)
+	)
+	WITH (
+		OIDS = FALSE
+	)
+	TABLESPACE pg_default;
+	
+	ALTER TABLE public.tokens
+		OWNER to "user";
 
 	DROP INDEX IF EXISTS movies_id_idx;
 
@@ -99,9 +175,6 @@ func InitTables(dialect goqu.DialectWrapper, db *sql.DB) error {
 		ON public.movies USING btree
 		(deleted_at ASC NULLS FIRST)
 		TABLESPACE pg_default;
-	
-	ALTER TABLE public.movies
-		OWNER to "user";
 
 	ALTER TABLE public.movies
 		DROP CONSTRAINT IF EXISTS movies_users_id_fkey;
@@ -117,21 +190,6 @@ func InitTables(dialect goqu.DialectWrapper, db *sql.DB) error {
 	CREATE INDEX fki_movies_users_id_fkey
 		ON public.movies(users_id);
 
-	CREATE TABLE IF NOT EXISTS public.movies_reviews
-	(
-		id uuid NOT NULL,
-		created_at timestamp with time zone NOT NULL DEFAULT now(),
-		updated_at timestamp with time zone NOT NULL DEFAULT now(),
-		deleted_at timestamp with time zone,
-		movies_id uuid NOT NULL,
-		users_id uuid,
-		rating numeric NOT NULL,
-		PRIMARY KEY (id)
-	)
-	WITH (
-		OIDS = FALSE
-	);
-
 	DROP INDEX IF EXISTS movies_reviews_id_idx;
 
 	CREATE INDEX movies_reviews_id_idx
@@ -145,9 +203,6 @@ func InitTables(dialect goqu.DialectWrapper, db *sql.DB) error {
 		ON public.movies_reviews USING btree
 		(deleted_at ASC NULLS FIRST)
 		TABLESPACE pg_default;
-	
-	ALTER TABLE public.movies_reviews
-		OWNER to "user";
 
 	ALTER TABLE public.movies_reviews
 		DROP CONSTRAINT IF EXISTS movies_reviews_movies_id_fkey;
@@ -177,23 +232,6 @@ func InitTables(dialect goqu.DialectWrapper, db *sql.DB) error {
 	CREATE INDEX fki_movies_reviews_users_id_fkey
 		ON public.movies_reviews(users_id);
 
-	CREATE TABLE IF NOT EXISTS public.users
-	(
-		id uuid NOT NULL,
-		created_at timestamp with time zone NOT NULL DEFAULT now(),
-		updated_at timestamp with time zone NOT NULL DEFAULT now(),
-		deleted_at timestamp with time zone,
-		email character varying(64) NOT NULL,
-		PRIMARY KEY (id)
-	)
-	WITH (
-		OIDS = FALSE
-	)
-	TABLESPACE pg_default;
-	
-	ALTER TABLE public.users
-		OWNER to "user";
-
 	DROP INDEX IF EXISTS users_id_idx;
 
 	CREATE INDEX users_id_idx
@@ -207,25 +245,6 @@ func InitTables(dialect goqu.DialectWrapper, db *sql.DB) error {
 		ON public.users USING btree
 		(deleted_at ASC NULLS FIRST)
 		TABLESPACE pg_default;
-
-	CREATE TABLE IF NOT EXISTS public.tokens
-	(
-		id uuid NOT NULL,
-		created_at timestamp with time zone NOT NULL DEFAULT now(),
-		updated_at timestamp with time zone NOT NULL DEFAULT now(),
-		deleted_at timestamp with time zone,
-		users_id uuid NOT NULL,
-		encrypted_token character varying(256) NOT NULL,
-		expires_at timestamp with time zone NOT NULL,
-		PRIMARY KEY (id)
-	)
-	WITH (
-		OIDS = FALSE
-	)
-	TABLESPACE pg_default;
-	
-	ALTER TABLE public.tokens
-		OWNER to "user";
 
 	ALTER TABLE public.tokens
 		DROP CONSTRAINT IF EXISTS tokens_users_id_fkey;
@@ -260,40 +279,43 @@ func InitTables(dialect goqu.DialectWrapper, db *sql.DB) error {
 	}
 	defer createTable.Close()
 
+	// Build Users Table Seed
+	usersSeedErr := seedDB(db, "users", []interface{}{
+		goqu.Record{
+			"id":    "d56d4bff-4e7e-4cf9-a3d2-38973c9dd57d",
+			"email": "test@mail.com",
+		},
+	})
+	if usersSeedErr != nil {
+		return usersSeedErr
+	}
+
 	// Build Movies Table Seed
-	insertMoviesDialect := goqu.Insert("movies").Rows(
+	movieSeedErr := seedDB(db, "movies", []interface{}{
 		goqu.Record{
 			"id":           "13cbd25a-4a9d-4e71-9c39-4fc515083c95",
 			"name":         "Scary Stories to Tell in the Dark",
 			"release_year": 2019,
 			"description":  "A group of teens face their fears in order to save their lives.",
+			"users_id":     "d56d4bff-4e7e-4cf9-a3d2-38973c9dd57d",
 		},
 		goqu.Record{
 			"id":           "77034dd5-d3e4-4a44-a7fa-c2730dfe5370",
 			"name":         "Dora and the Lost City of Gold",
 			"release_year": 2019,
 			"description":  "Dora, a teenage explorer, leads her friends on an adventure to save her parents and solve the mystery behind a lost city of gold.",
+			"users_id":     "d56d4bff-4e7e-4cf9-a3d2-38973c9dd57d",
 		},
 		goqu.Record{
 			"id":           "a774e5ff-a5f9-4643-832d-27d131344fe3",
 			"name":         "The Art of Racing in the Rain",
 			"release_year": 2019,
 			"description":  "Through his bond with his owner, aspiring Formula One race car driver Denny, golden retriever Enzo learns that the techniques needed on the racetrack can also be used to successfully navigate the journey of life.",
+			"users_id":     "d56d4bff-4e7e-4cf9-a3d2-38973c9dd57d",
 		},
-	)
-	insertMoviesQuery, _, moviesToSQLErr := insertMoviesDialect.ToSQL()
-	if moviesToSQLErr != nil {
-		return moviesToSQLErr
-	}
-
-	insertMoviesRes, insertMoviesErr := db.Query(insertMoviesQuery)
-	// Ignore constraint errors, which means that the data has already been inserted
-	if insertMoviesErr != nil {
-		if !strings.Contains(insertMoviesErr.Error(), `unique constraint "movies_pkey"`) {
-			return insertMoviesErr
-		}
-	} else {
-		defer insertMoviesRes.Close()
+	})
+	if movieSeedErr != nil {
+		return movieSeedErr
 	}
 
 	fmt.Println("OK")
