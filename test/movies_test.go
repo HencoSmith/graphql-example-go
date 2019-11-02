@@ -26,9 +26,12 @@ type TestMovieUpdate struct {
 }
 
 type TestMovieRating struct {
-	ID  string
-	Rating           int64
+	ID     string
+	Rating int64
 }
+
+// TODO: replace with JWT
+var tokenJWT = "test"
 
 func CreateMovie(input TestMovie) (body []byte, err error) {
 	config := source.GetConfig("..")
@@ -54,10 +57,19 @@ func CreateMovie(input TestMovie) (body []byte, err error) {
 	strURL := URL.String() + v.Encode()
 
 	// Make the GraphQL mutation request
-	res, errPost := http.Post(strURL, "application/json", bytes.NewBuffer([]byte("{}")))
-	if errPost != nil {
-		return nil, errPost
+	client := &http.Client{}
+
+	req, err := http.NewRequest("POST", strURL, bytes.NewBuffer([]byte("{}")))
+	if err != nil {
+		return nil, err
 	}
+
+	req.Header.Add("authorization", tokenJWT)
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
 	defer res.Body.Close()
 
 	// Handle the response
@@ -88,10 +100,19 @@ func DeleteMovie(ID string) (body []byte, err error) {
 	strURL := URL.String() + v.Encode()
 
 	// Make the GraphQL mutation request
-	res, errPost := http.Post(strURL, "application/json", bytes.NewBuffer([]byte("{}")))
-	if errPost != nil {
-		return nil, errPost
+	client := &http.Client{}
+
+	req, err := http.NewRequest("POST", strURL, bytes.NewBuffer([]byte("{}")))
+	if err != nil {
+		return nil, err
 	}
+
+	req.Header.Add("authorization", tokenJWT)
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
 	defer res.Body.Close()
 
 	// Handle the response
@@ -127,10 +148,19 @@ func UpdateMovie(input TestMovieUpdate) (body []byte, err error) {
 	strURL := URL.String() + v.Encode()
 
 	// Make the GraphQL mutation request
-	res, errPost := http.Post(strURL, "application/json", bytes.NewBuffer([]byte("{}")))
-	if errPost != nil {
-		return nil, errPost
+	client := &http.Client{}
+
+	req, err := http.NewRequest("POST", strURL, bytes.NewBuffer([]byte("{}")))
+	if err != nil {
+		return nil, err
 	}
+
+	req.Header.Add("authorization", tokenJWT)
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
 	defer res.Body.Close()
 
 	// Handle the response
@@ -166,10 +196,19 @@ func RateMovie(input TestMovieRating) (body []byte, err error) {
 	strURL := URL.String() + v.Encode()
 
 	// Make the GraphQL mutation request
-	res, errPost := http.Post(strURL, "application/json", bytes.NewBuffer([]byte("{}")))
-	if errPost != nil {
-		return nil, errPost
+	client := &http.Client{}
+
+	req, err := http.NewRequest("POST", strURL, bytes.NewBuffer([]byte("{}")))
+	if err != nil {
+		return nil, err
 	}
+
+	req.Header.Add("authorization", tokenJWT)
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
 	defer res.Body.Close()
 
 	// Handle the response
@@ -183,7 +222,16 @@ func RateMovie(input TestMovieRating) (body []byte, err error) {
 
 func TestMovieList(t *testing.T) {
 	config := source.GetConfig("..")
-	res, err := http.Get("http://localhost:" + config.Server.Port + "/graphql?query={list{id,name,release_year,description,rating,review_count}}")
+
+	client := &http.Client{}
+
+	req, err := http.NewRequest("GET", "http://localhost:"+config.Server.Port+"/graphql?query={list{id,name,release_year,description,rating,review_count}}", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	req.Header.Add("authorization", tokenJWT)
+	res, err := client.Do(req)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -221,7 +269,16 @@ func TestMovieList(t *testing.T) {
 
 func TestGetMovie(t *testing.T) {
 	config := source.GetConfig("..")
-	res, err := http.Get("http://localhost:" + config.Server.Port + "/graphql?query={movie(id:\"13cbd25a-4a9d-4e71-9c39-4fc515083c95\"){id,name,release_year,description,rating,review_count}}")
+
+	client := &http.Client{}
+
+	req, err := http.NewRequest("GET", "http://localhost:"+config.Server.Port+"/graphql?query={movie(id:\"13cbd25a-4a9d-4e71-9c39-4fc515083c95\"){id,name,release_year,description,rating,review_count}}", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	req.Header.Add("authorization", tokenJWT)
+	res, err := client.Do(req)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -353,8 +410,8 @@ func TestUpdateMovie(t *testing.T) {
 
 func TestRateMovie(t *testing.T) {
 	input := TestMovieRating{
-		ID:          "77034dd5-d3e4-4a44-a7fa-c2730dfe5370",
-		Rating:        8,
+		ID:     "77034dd5-d3e4-4a44-a7fa-c2730dfe5370",
+		Rating: 8,
 	}
 
 	buff, errUpdate := RateMovie(input)
@@ -367,11 +424,10 @@ func TestRateMovie(t *testing.T) {
 	strUpdateBody := string(buff)
 	status := gjson.Get(strUpdateBody, "data.rate").String()
 	assert.Equal(t, status, "success", "Rating failed")
-	
 
 	// Reverse the changes
 	inputReverse := TestMovieRating{
-		ID:          "77034dd5-d3e4-4a44-a7fa-c2730dfe5370",
+		ID:     "77034dd5-d3e4-4a44-a7fa-c2730dfe5370",
 		Rating: 0,
 	}
 
@@ -385,5 +441,5 @@ func TestRateMovie(t *testing.T) {
 	strReverseBody := string(buffReverse)
 	statusReverse := gjson.Get(strReverseBody, "data.rate").String()
 	assert.Equal(t, statusReverse, "success", "Rating reverse failed")
-	
+
 }

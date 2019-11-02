@@ -5,11 +5,13 @@ import (
 	"math"
 	"time"
 
-	"github.com/HencoSmith/graphql-example-go/models"
 	"github.com/graphql-go/graphql"
 
 	"github.com/doug-martin/goqu/v8"
 	uuid "github.com/satori/go.uuid"
+
+	"github.com/HencoSmith/graphql-example-go/models"
+	source "github.com/HencoSmith/graphql-example-go/source"
 )
 
 // findMovie - lookup a movie matching the specified expression
@@ -123,6 +125,11 @@ func Mutations(dialect goqu.DialectWrapper, db *sql.DB) *graphql.Object {
 					},
 				},
 				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+					user, customError := source.GetUser(params.Context, dialect, db)
+					if customError != nil {
+						return nil, customError
+					}
+
 					// Insert the new movie
 					name, _ := params.Args["name"].(string)
 					description, _ := params.Args["description"].(string)
@@ -133,8 +140,7 @@ func Mutations(dialect goqu.DialectWrapper, db *sql.DB) *graphql.Object {
 							"name":         name,
 							"description":  description,
 							"release_year": releaseYear,
-							// TODO: remove hardcoded value once authentication done
-							"users_id": "d56d4bff-4e7e-4cf9-a3d2-38973c9dd57d",
+							"users_id":     user.ID,
 						},
 					)
 					insertQuery, _, toSQLErr := insertDialect.ToSQL()
@@ -176,6 +182,11 @@ func Mutations(dialect goqu.DialectWrapper, db *sql.DB) *graphql.Object {
 					},
 				},
 				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+					user, customError := source.GetUser(params.Context, dialect, db)
+					if customError != nil {
+						return nil, customError
+					}
+
 					id, _ := params.Args["id"].(string)
 					name, _ := params.Args["name"].(string)
 					description, _ := params.Args["description"].(string)
@@ -200,8 +211,7 @@ func Mutations(dialect goqu.DialectWrapper, db *sql.DB) *graphql.Object {
 					).Where(goqu.Ex{
 						"id":         id,
 						"deleted_at": nil,
-						// TODO: remove hardcoded value once authentication done
-						"users_id": "d56d4bff-4e7e-4cf9-a3d2-38973c9dd57d",
+						"users_id":   user.ID,
 					})
 					updateQuery, _, toSQLErr := updateDialect.ToSQL()
 					if toSQLErr != nil {
@@ -232,6 +242,11 @@ func Mutations(dialect goqu.DialectWrapper, db *sql.DB) *graphql.Object {
 					},
 				},
 				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+					user, customError := source.GetUser(params.Context, dialect, db)
+					if customError != nil {
+						return nil, customError
+					}
+
 					id, _ := params.Args["id"].(string)
 
 					// Lookup existing movie
@@ -248,9 +263,8 @@ func Mutations(dialect goqu.DialectWrapper, db *sql.DB) *graphql.Object {
 							"deleted_at": time.Now().Format(time.RFC3339),
 						},
 					).Where(goqu.Ex{
-						"id": id,
-						// TODO: remove hardcoded value once authentication done
-						"users_id": "d56d4bff-4e7e-4cf9-a3d2-38973c9dd57d",
+						"id":       id,
+						"users_id": user.ID,
 					})
 					deleteQuery, _, toSQLErr := deleteDialect.ToSQL()
 					if toSQLErr != nil {
@@ -281,6 +295,11 @@ func Mutations(dialect goqu.DialectWrapper, db *sql.DB) *graphql.Object {
 					},
 				},
 				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+					user, customError := source.GetUser(params.Context, dialect, db)
+					if customError != nil {
+						return nil, customError
+					}
+
 					id, _ := params.Args["id"].(string)
 					rating, _ := params.Args["rating"].(int)
 
@@ -303,8 +322,7 @@ func Mutations(dialect goqu.DialectWrapper, db *sql.DB) *graphql.Object {
 							"id":        uuid.NewV4(),
 							"rating":    formattedRating,
 							"movies_id": movie.ID,
-							// TODO: remove hardcoded value once authentication done
-							"users_id": "d56d4bff-4e7e-4cf9-a3d2-38973c9dd57d",
+							"users_id":  user.ID,
 						},
 					)
 					insertQuery, _, insertToSQLErr := insertDialect.ToSQL()

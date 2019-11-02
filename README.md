@@ -42,9 +42,17 @@ docker pull postgres
 docker run -p 5432:5432 --name postgres-container -e POSTGRES_PASSWORD=password -e POSTGRES_USER=user -e POSTGRES_DB=test_db -d postgres
 ```
 
+# Authorization
+Add the following to the HTTP headers
+```javascript
+{
+  "authorization": "test"
+}
+```
+
 # TODOS
 * API keys - JWT
-* Remove hard coded users_id for mutations once JWT is done & update test cases
+* Update test cases once JWT is done
 * Display user email on movie queries instead of ID
 * Move DB creation string to file
 * Subscriptions

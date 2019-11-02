@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -17,8 +18,17 @@ import (
 	_ "github.com/doug-martin/goqu/v8/dialect/postgres"
 
 	"github.com/HencoSmith/graphql-example-go/graphql/movies"
+	"github.com/HencoSmith/graphql-example-go/models"
 	source "github.com/HencoSmith/graphql-example-go/source"
 )
+
+// ContextMiddleware - Adds HTTP header to GraphQL context
+func ContextMiddleware(next *handler.Handler) http.Handler {
+	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		ctx := context.WithValue(req.Context(), models.ContextKey{Key: "header"}, req.Header)
+		next.ContextHandler(ctx, res, req)
+	})
+}
 
 func main() {
 	// Read configuration file
@@ -63,7 +73,7 @@ func main() {
 	mux := http.NewServeMux()
 
 	// GraphQL endpoint
-	mux.Handle("/graphql", h)
+	mux.Handle("/graphql", ContextMiddleware(h))
 
 	// Prisma GraphQL playground
 	mux.Handle("/playground/", http.StripPrefix("/playground/", http.FileServer(http.Dir("views"))))

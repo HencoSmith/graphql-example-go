@@ -3,10 +3,11 @@ package movies
 import (
 	"database/sql"
 
-	"github.com/HencoSmith/graphql-example-go/models"
+	"github.com/doug-martin/goqu/v8"
 	"github.com/graphql-go/graphql"
 
-	"github.com/doug-martin/goqu/v8"
+	"github.com/HencoSmith/graphql-example-go/models"
+	source "github.com/HencoSmith/graphql-example-go/source"
 )
 
 // Queries - all GraphQL queries related to movies
@@ -24,6 +25,11 @@ func Queries(dialect goqu.DialectWrapper, db *sql.DB) *graphql.Object {
 						},
 					},
 					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+						_, customError := source.GetUser(p.Context, dialect, db)
+						if customError != nil {
+							return nil, customError
+						}
+
 						id, ok := p.Args["id"].(string)
 						if ok {
 							// Find movie
@@ -79,7 +85,12 @@ func Queries(dialect goqu.DialectWrapper, db *sql.DB) *graphql.Object {
 				"list": &graphql.Field{
 					Type:        graphql.NewList(MovieType),
 					Description: "Get movie list",
-					Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+						_, customError := source.GetUser(p.Context, dialect, db)
+						if customError != nil {
+							return nil, customError
+						}
+
 						dialectString := dialect.From("movies").Where(goqu.Ex{
 							"deleted_at": nil,
 						}).Order(goqu.C("id").Asc())
