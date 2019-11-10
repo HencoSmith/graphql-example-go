@@ -18,6 +18,7 @@ import (
 	_ "github.com/doug-martin/goqu/v8/dialect/postgres"
 
 	"github.com/HencoSmith/graphql-example-go/graphql/movies"
+	"github.com/HencoSmith/graphql-example-go/graphql/users"
 	"github.com/HencoSmith/graphql-example-go/models"
 	source "github.com/HencoSmith/graphql-example-go/source"
 )
@@ -50,9 +51,27 @@ func main() {
 	}
 
 	// Bind Queries
-	var queryType = movies.Queries(dialect, db)
+	allQueries := movies.Queries(dialect, db)
+	userQueries := users.Queries(dialect, db)
+	for k, v := range userQueries {
+		allQueries[k] = v
+	}
+
+	var queryType = graphql.NewObject(
+		graphql.ObjectConfig{
+			Name:   "Query",
+			Fields: allQueries,
+		},
+	)
+
 	// Bind Mutations
-	var mutationType = movies.Mutations(dialect, db)
+	allMutations := movies.Mutations(dialect, db)
+	var mutationType = graphql.NewObject(
+		graphql.ObjectConfig{
+			Name:   "Mutation",
+			Fields: allMutations,
+		},
+	)
 
 	// Generate the schema
 	var schema, _ = graphql.NewSchema(

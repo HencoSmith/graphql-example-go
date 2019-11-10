@@ -30,10 +30,13 @@ go test -run TestMyFunc
 
 # Environment Variables
 These are optional, see configuration file for defaults.
+The passwords should set in the environment variables however for this example 
+defaults are provided in the configuration file to make set up easier.
 ```
 POSTGRES_PASSWORD - Database.Password
 POSTGRES_USER - Database.User
 POSTGRES_DB - Database.Name
+JWT_KEY - JWT.Key
 ```
 
 # Database Setup
@@ -43,10 +46,16 @@ docker run -p 5432:5432 --name postgres-container -e POSTGRES_PASSWORD=password 
 ```
 
 # Authorization
-Add the following to the HTTP headers
+Make the following GraphQL query
+```javascript
+query {
+  getToken(email: "test@mail.com", password: "test")
+}
+```
+Then insert the resulting token in the HTTP Headers of each API call e.g.
 ```javascript
 {
-  "authorization": "test"
+  "authorization": "paste resulting token here..."
 }
 ```
 

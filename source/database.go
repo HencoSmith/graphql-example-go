@@ -133,6 +133,7 @@ func InitTables(dialect goqu.DialectWrapper, db *sql.DB) error {
 		updated_at timestamp with time zone NOT NULL DEFAULT now(),
 		deleted_at timestamp with time zone,
 		email character varying(64) NOT NULL,
+		encrypted_password character varying(512) NOT NULL,
 		PRIMARY KEY (id)
 	)
 	WITH (
@@ -141,25 +142,6 @@ func InitTables(dialect goqu.DialectWrapper, db *sql.DB) error {
 	TABLESPACE pg_default;
 	
 	ALTER TABLE public.users
-		OWNER to "user";
-
-	CREATE TABLE IF NOT EXISTS public.tokens
-	(
-		id uuid NOT NULL,
-		created_at timestamp with time zone NOT NULL DEFAULT now(),
-		updated_at timestamp with time zone NOT NULL DEFAULT now(),
-		deleted_at timestamp with time zone,
-		users_id uuid NOT NULL,
-		encrypted_token character varying(256) NOT NULL,
-		expires_at timestamp with time zone NOT NULL,
-		PRIMARY KEY (id)
-	)
-	WITH (
-		OIDS = FALSE
-	)
-	TABLESPACE pg_default;
-	
-	ALTER TABLE public.tokens
 		OWNER to "user";
 
 	DROP INDEX IF EXISTS movies_id_idx;
@@ -245,45 +227,24 @@ func InitTables(dialect goqu.DialectWrapper, db *sql.DB) error {
 		ON public.users USING btree
 		(deleted_at ASC NULLS FIRST)
 		TABLESPACE pg_default;
-
-	ALTER TABLE public.tokens
-		DROP CONSTRAINT IF EXISTS tokens_users_id_fkey;
-
-	ALTER TABLE public.tokens
-		ADD CONSTRAINT tokens_users_id_fkey FOREIGN KEY (users_id)
-		REFERENCES public.users (id) MATCH SIMPLE
-		ON UPDATE NO ACTION
-		ON DELETE NO ACTION;
-
-	DROP INDEX IF EXISTS fki_tokens_users_id_fkey;
-
-	CREATE INDEX fki_tokens_users_id_fkey
-		ON public.tokens(users_id);
-
-	DROP INDEX IF EXISTS tokens_id_idx;
-
-	CREATE INDEX tokens_id_idx
-		ON public.tokens USING btree
-		(id ASC NULLS LAST)
-		TABLESPACE pg_default;
-
-	DROP INDEX IF EXISTS tokens_deleted_at_idx;
-
-	CREATE INDEX tokens_deleted_at_idx
-		ON public.tokens USING btree
-		(deleted_at ASC NULLS FIRST)
-		TABLESPACE pg_default;
 	`)
 	if createErr != nil {
 		return createErr
 	}
 	defer createTable.Close()
 
+	// Hash a default password
+	encryptedPassword, hashErr := Hash("test")
+	if hashErr != nil {
+		return hashErr
+	}
+
 	// Build Users Table Seed
 	usersSeedErr := seedDB(db, "users", []interface{}{
 		goqu.Record{
-			"id":    "d56d4bff-4e7e-4cf9-a3d2-38973c9dd57d",
-			"email": "test@mail.com",
+			"id":                 "d56d4bff-4e7e-4cf9-a3d2-38973c9dd57d",
+			"email":              "test@mail.com",
+			"encrypted_password": encryptedPassword,
 		},
 	})
 	if usersSeedErr != nil {

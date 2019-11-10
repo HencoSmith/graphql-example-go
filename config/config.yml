@@ -8,3 +8,6 @@ database:
  name: "test_db"
  password: "password"
  ssl: "disable"
+jwt:
+ key: "password"
+ expiration: 168
