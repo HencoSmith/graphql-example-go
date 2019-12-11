@@ -7,19 +7,24 @@ Example of GraphQL implementation in Golang
   * Prisma (Preferred) [http://localhost:8080/playground]
   * GraphiQL [http://localhost:8080/graphql]
 
-# Executing API calls
-All API calls except 'getToken' requires and Authorization header.
-For testing purposes run the following query to obtain a test token:
-```
+# Authorization
+Make the following GraphQL query
+```javascript
 query {
   getToken(email: "test@mail.com", password: "test")
 }
 ```
-Then provide this HTTP header in all other API calls e.g.
-```
+Then insert the resulting token in the HTTP Headers of each API call e.g.
+```javascript
 {
-  "authorization":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySUQiOiJkNTZkNGJmZi00ZTdlLTRjZjktYTNkMi0zODk3M2M5ZGQ1N2QiLCJleHAiOjE1NzY2NjQ4MjR9.ojFLoZsw1vuXTHValALjwXdiMDOjMZd08Qs6hpEXcFQ"
+  "authorization": "paste resulting token here..."
 }
+```
+
+# Database Setup
+```bash
+docker pull postgres
+docker run -p 5432:5432 --name postgres-container -e POSTGRES_PASSWORD=password -e POSTGRES_USER=user -e POSTGRES_DB=test_db -d postgres
 ```
 
 # Documentation
@@ -66,26 +71,6 @@ POSTGRES_PASSWORD - Database.Password
 POSTGRES_USER - Database.User
 POSTGRES_DB - Database.Name
 JWT_KEY - JWT.Key
-```
-
-# Database Setup
-```bash
-docker pull postgres
-docker run -p 5432:5432 --name postgres-container -e POSTGRES_PASSWORD=password -e POSTGRES_USER=user -e POSTGRES_DB=test_db -d postgres
-```
-
-# Authorization
-Make the following GraphQL query
-```javascript
-query {
-  getToken(email: "test@mail.com", password: "test")
-}
-```
-Then insert the resulting token in the HTTP Headers of each API call e.g.
-```javascript
-{
-  "authorization": "paste resulting token here..."
-}
 ```
 
 # TODOS
