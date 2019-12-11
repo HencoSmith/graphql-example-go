@@ -43,8 +43,7 @@ func Queries(dialect goqu.DialectWrapper, db *sql.DB) graphql.Fields {
 					return nil, errors.New("User Not Found")
 				}
 
-				// TODO: generate new JWT here
-				return "test", nil
+				return source.CreateJWT(user.ID)
 			},
 		},
 	}

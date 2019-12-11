@@ -72,13 +72,10 @@ func GetUserFromToken(currentContext context.Context, dialect goqu.DialectWrappe
 	authorizationToken := contextValue.Get("Authorization")
 
 	// Check if the token is valid
-	// TODO: JWT DB Lookup
-	// TODO: JWT validation
-	// TODO: JWT user ID extraction
-	if authorizationToken != "test" {
-		return models.User{}, errors.New("Invalid Token")
+	userID, err := DecodeJWT(authorizationToken)
+	if err != nil {
+		return models.User{}, err
 	}
-	userID := "d56d4bff-4e7e-4cf9-a3d2-38973c9dd57d"
 
 	// Find user
 	return GetUser(dialect, db, userID, "")

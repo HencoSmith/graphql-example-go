@@ -30,8 +30,33 @@ type TestMovieRating struct {
 	Rating int64
 }
 
-// TODO: replace with JWT
-var tokenJWT = "test"
+func getToken() (string, error) {
+	config := source.GetConfig("..")
+
+	client := &http.Client{}
+
+	req, err := http.NewRequest("GET", "http://localhost:"+config.Server.Port+"/graphql?query={getToken%28email:%20%22test@mail.com%22,%20password:%20%22test%22%29}", nil)
+	if err != nil {
+		return "", err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	res, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+
+	defer res.Body.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return "", err
+	}
+
+	bodyStr := string(body)
+
+	return gjson.Get(bodyStr, "data.getToken").String(), nil
+}
 
 func CreateMovie(input TestMovie) (body []byte, err error) {
 	config := source.GetConfig("..")
@@ -64,7 +89,12 @@ func CreateMovie(input TestMovie) (body []byte, err error) {
 		return nil, err
 	}
 
-	req.Header.Add("authorization", tokenJWT)
+	token, err := getToken()
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("authorization", token)
 	res, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -107,7 +137,12 @@ func DeleteMovie(ID string) (body []byte, err error) {
 		return nil, err
 	}
 
-	req.Header.Add("authorization", tokenJWT)
+	token, err := getToken()
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("authorization", token)
 	res, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -155,7 +190,12 @@ func UpdateMovie(input TestMovieUpdate) (body []byte, err error) {
 		return nil, err
 	}
 
-	req.Header.Add("authorization", tokenJWT)
+	token, err := getToken()
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("authorization", token)
 	res, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -203,7 +243,12 @@ func RateMovie(input TestMovieRating) (body []byte, err error) {
 		return nil, err
 	}
 
-	req.Header.Add("authorization", tokenJWT)
+	token, err := getToken()
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("authorization", token)
 	res, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -230,7 +275,12 @@ func TestMovieList(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	req.Header.Add("authorization", tokenJWT)
+	token, err := getToken()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	req.Header.Add("authorization", token)
 	res, err := client.Do(req)
 	if err != nil {
 		t.Fatal(err)
@@ -277,7 +327,12 @@ func TestGetMovie(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	req.Header.Add("authorization", tokenJWT)
+	token, err := getToken()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	req.Header.Add("authorization", token)
 	res, err := client.Do(req)
 	if err != nil {
 		t.Fatal(err)
@@ -442,4 +497,12 @@ func TestRateMovie(t *testing.T) {
 	statusReverse := gjson.Get(strReverseBody, "data.rate").String()
 	assert.Equal(t, statusReverse, "success", "Rating reverse failed")
 
+}
+
+func TestGetToken(t *testing.T) {
+	token, err := getToken()
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, len(token) > 168, true, "Token is too short")
 }
