@@ -73,7 +73,7 @@ POSTGRES_DB - Database.Name
 JWT_KEY - JWT.Key
 ```
 
-# TODOS
+# Improvements that can be done
 * Display user email on movie queries instead of ID
 * Move DB creation string to file
 * Subscriptions
